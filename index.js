@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 const app = express();
 
@@ -60,12 +60,45 @@ async function run() {
     });
 
     // Get a single equipment by email
-    app.get("/equipments/:email", async(req, res)=>{
+    app.get("/equipments/email/:email", async(req, res)=>{
         const email = req.params.email;
         const query = { userEmail: email };
         const cursor = equipmentCollection.find(query);
         const equipments = await cursor.toArray();
         res.send(equipments);
+    })
+
+    // Get a single equipment by id
+    app.get("/equipments/id/:id", async(req, res)=>{
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const equipment = await equipmentCollection.findOne(query);
+        res.send(equipment);
+    })
+
+    // Update an equipment
+    app.put("/equipments/id/:id", async(req, res)=>{
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const options = { upsert: true };
+        const updatedEquipment = req.body;
+        const equipment = {
+          $set: {
+            itemName: updatedEquipment.itemName,
+            description: updatedEquipment.description,
+            photoUrl: updatedEquipment.photoUrl,
+          }
+        }
+        const result = await equipmentCollection.updateOne(filter, equipment, options);
+        res.send(result);
+    })
+
+    // Delete an equipment
+    app.delete("/equipments/id/:id", async(req, res)=>{
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await equipmentCollection.deleteOne(query);
+        res.send(result);
     })
 
     await client.db("admin").command({ ping: 1 });
